@@ -7,7 +7,9 @@ python main.py
 ```
 
 ### Plan
-1. 
+considerations:
+1. separators=["\n\nHuman:", "\n\nAssistant:"] # Preserve turn boundaries
+
 ### Evaluation
 manual evaluate retrieved result
 todo
@@ -28,4 +30,8 @@ todo
 ├── requirements.txt
 ├── .env
 └── main.py
+```
+
+```
+import pdb; pdb.set_trace()
 ```

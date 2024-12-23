@@ -31,7 +31,7 @@ class Retriever:
         results = self.vector_db.search(query, k=3)
         context = ""
         for result in results:
-            print(result['metadata']['chunk_link'], '\n')
+            print(result['metadata'], '\n')
             chunk = result['metadata']
-            context += f"\n{chunk['text']}\n"
+            context += f"\n{chunk['original_content']}\n"
         return results, context

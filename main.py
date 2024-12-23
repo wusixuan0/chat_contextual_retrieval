@@ -15,21 +15,19 @@ def main():
 
     # Initialize the VectorDB
     vector_db = VectorDB(
-        name="anthropic_docs",
+        name="chats",
         api_key=os.getenv('VOYAGE_API_KEY')
     )
 
-    # Load docs
-    # with open('./data/anthropic_docs.json', 'r') as f:
-    #     anthropic_docs = json.load(f)
 
     # Load vector db
-    vector_db.load_data('anthropic_docs')
+    vector_db.load_data()
 
     retriever = Retriever(vector_db)
-    question = "How can you create multiple test cases for an evaluation in the Anthropic Evaluation tool?"
+    question = "How do I design rag for the use case of searching in chat history?"
     results, context = retriever.retrieve_base(question)
-    print(context)
+    print(results, context)
+
 
 if __name__ == "__main__":
     main()

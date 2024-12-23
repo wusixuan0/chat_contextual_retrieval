@@ -3,6 +3,7 @@ import pickle
 import json
 import numpy as np
 import voyageai
+from src.process_chat.process import PreProcessChatText
 
 class VectorDB:
     def __init__(self, name, api_key=None):
@@ -15,7 +16,7 @@ class VectorDB:
         self.query_cache = {}
         self.db_path = f"./data/{name}/vector_db.pkl"
 
-    def load_data(self, data):
+    def load_data(self):
         if self.embeddings and self.metadata:
             print("Vector database is already loaded. Skipping data loading.")
             return
@@ -24,8 +25,8 @@ class VectorDB:
             self.load_db()
             return
 
-        texts = [f"Heading: {item['chunk_heading']}\n\n Chunk Text:{item['text']}" for item in data]
-        self._embed_and_store(texts, data)
+        chunks, formatted_chunks = PreProcessChatText().process_chat()
+        self._embed_and_store(chunks, formatted_chunks)
         self.save_db()
         print("Vector database loaded and saved.")
 
