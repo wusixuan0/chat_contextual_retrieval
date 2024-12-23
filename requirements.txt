@@ -1,0 +1,8 @@
+anthropic
+voyageai
+pandas
+numpy
+matplotlib
+seaborn
+scikit-learn
+python-dotenv
