@@ -25,7 +25,14 @@ class VectorDB:
             self.load_db()
             return
 
-        chunks, formatted_chunks = PreProcessChatText().process_chat()
+        chunks, formatted_chunks = PreProcessChatText().process_chat(file_name="claude-rag-tutorial-to-mvp.txt")
+        """
+        use claude-rag-tutorial-to-mvp.txt because it contains flow summary
+        """
+        # situate_context
+
+
+        
         self._embed_and_store(chunks, formatted_chunks)
         self.save_db()
         print("Vector database loaded and saved.")

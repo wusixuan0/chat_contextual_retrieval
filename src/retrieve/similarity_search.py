@@ -42,26 +42,19 @@ def read_result(similar_docs, file_path):
     with open(file_path, 'w') as f:
         f.write(similar_text)
 
-def generate_context_prompt(previous_context, current_chunk, next_context):
+def generate_context_prompt(self, flow_summary, chunk_content):
     return f"""
-Here is a section of a chat conversation:
-<previous_context>
-{ previous_context }
-</previous_context>
+Here is a summary of the conversation flow and a section of a chat conversation:
 
-<current_chunk>
-{ current_chunk }
-</current_chunk>
+Conversation Flow:
+{flow_summary}
 
-<next_context>
-{ next_context }
-</next_context>
+Chat Section:
+{chunk_content}
 
-Generate a brief (50-100 tokens) context description that:
-1. States the main topic being discussed
-2. Indicates the conversation stage (starting/continuing/concluding)
-3. Lists 1-2 key points from this part of the discussion
+Please give a short succinct context to situate this chunk within the overall conversation for the purposes of improving search retrieval of the chunk. Focus on:
+1. What is being discussed
+2. Whether this contains a decision or insight
 
-Format: "This chunk discusses [topic]. The conversation is [stage] about [specific aspect]. Key points: [brief points]."
-Answer only with the context description, nothing else.
+Answer only with the succinct context and nothing else.
 """
