@@ -1,0 +1,13 @@
+Please help me understand the flow of our conversation:
+1. Outline the main TOPICS we covered in sequence.
+2. Highlight key BRANCH points where we had multiple directions to explore
+3. Note important realizations
+4. Flag any PARKING LOT items (topics we noted but didn't fully explore)
+5. Show how topics CONNECT to each other
+Please structure the response to show both chronological flow and relationship between topics.
+Present this in a clear format using these markers:
+TOPIC: Major discussion areas
+BRANCH: Decision or transition points
+INSIGHT: Key insights or realizations
+PARK: Items for future exploration
+LINK: How topics connect

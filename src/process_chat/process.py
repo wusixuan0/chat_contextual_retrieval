@@ -13,8 +13,7 @@ class PreProcessChatText:
 
         # texts = [chunk["text"] for chunk in all_chunks]
 
-    def process_chat(self, file_name):
-        file_path = f'./data/{self.name}/raw_txt/{file_name}'
+    def process_chat(self, file_path):
         docs = self._load_text_file(file_path)
         doc_chunks = self._split_documents(docs)
 
