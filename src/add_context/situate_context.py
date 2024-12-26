@@ -1,5 +1,32 @@
 
+from src.util.llm_call import get_llm
+from src.util.util import read_text_file, write_json_file, load_json_file
 
+def situate_context(chunk_file_path, text_file_path):
+    formatted_chunks = load_json_file(chunk_file_path)
+    conversation_flow_summary = read_text_file(text_file_path)
+    num_chunks = len(formatted_chunks)
+
+    for i in range(num_chunks):
+        chunk = formatted_chunks[i]
+
+        if "context" in chunk: continue
+
+        context_generation_prompt = generate_context_prompt(
+            flow_summary=conversation_flow_summary,
+            chunk_content=chunk["content"],
+            index=chunk["i"],
+            num_chunks=num_chunks,
+        )
+        try:
+            print(i)
+            response_text = get_llm(content=context_generation_prompt)
+            chunk["context"] = response_text
+        except Exception as e:
+            print(f"Error occurred at chunk {i}: {str(e)}")
+            write_json_file(formatted_chunks, chunk_file_path)
+            raise
+    write_json_file(formatted_chunks, chunk_file_path)
 
 def generate_context_prompt(flow_summary, chunk_content, index, num_chunks):
     return f"""

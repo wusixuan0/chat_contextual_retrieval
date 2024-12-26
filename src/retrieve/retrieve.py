@@ -27,11 +27,12 @@ class Retriever:
         self.client = client
         self.model = model
 
-    def retrieve_base(self, query):
-        results = self.vector_db.search(query, k=3)
+    def retrieve_base(self, query, k=3):
+        results = self.vector_db.search(query, k)
+
         context = ""
         for result in results:
-            print(result['metadata'], '\n')
             chunk = result['metadata']
-            context += f"\n{chunk['original_content']}\n"
+            context += f"\n{chunk['content']}\n"
+            context += f"\n{chunk['context']}\n"
         return results, context

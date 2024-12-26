@@ -1,19 +1,14 @@
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
+from src.util.util import write_json_file
+# from src.add_context.situate_context import situate_context
 
 class PreProcessChatText:
     def __init__(self, name='chats'):
         self.name = name
 
-    # def process_chat(self, chat_content: str, chat_title: str, chat_link: str):
-        # all_chunks = []
-        # for chat in chats_data:
-        #     chunks = self.process_chat(chat["content"], chat["title"], chat["link"])
-        #     all_chunks.extend(chunks)
-
-        # texts = [chunk["text"] for chunk in all_chunks]
-
-    def process_chat(self, file_path):
+    def process_chat(self, file_dir, file_name='chat_history.txt'):
+        file_path = f"{file_dir}/{file_name}"
         docs = self._load_text_file(file_path)
         doc_chunks = self._split_documents(docs)
 
@@ -22,7 +17,9 @@ class PreProcessChatText:
 
         # Format chunk to store in metadata
         formatted_chunks = self._process_chunks(string_chunks)
-        return string_chunks, formatted_chunks
+        write_json_file(data=formatted_chunks, file_path=f"{file_dir}/chunks.json")
+
+        return formatted_chunks
 
     def _load_text_file(self, file_path):
         loader = TextLoader(file_path, encoding='utf-8')

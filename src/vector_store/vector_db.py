@@ -4,19 +4,19 @@ import json
 import numpy as np
 import voyageai
 from src.process_chat.process import PreProcessChatText
+from src.util.util import load_json_file
 
 class VectorDB:
-    def __init__(self, name, api_key=None):
+    def __init__(self, db_path, api_key=None):
         if api_key is None:
             api_key = os.getenv("VOYAGE_API_KEY")
         self.client = voyageai.Client(api_key=api_key)
-        self.name = name
         self.embeddings = []
         self.metadata = []
         self.query_cache = {}
-        self.db_path = f"./data/{name}/vector_db.pkl"
+        self.db_path = db_path # f"{db_directory}/vector_db.pkl"
 
-    def load_data(self):
+    def load_data(self, chunk_path=None):
         if self.embeddings and self.metadata:
             print("Vector database is already loaded. Skipping data loading.")
             return
@@ -25,17 +25,15 @@ class VectorDB:
             self.load_db()
             return
 
-        chunks, formatted_chunks = PreProcessChatText().process_chat(file_name="claude-rag-tutorial-to-mvp.txt")
-        """
-        use claude-rag-tutorial-to-mvp.txt because it contains flow summary
-        """
-        # situate_context
+        print("Creating new vector database.")
 
+        metadata = load_json_file(chunk_path) # f"{directory}/chunks.json"
 
-        
-        self._embed_and_store(chunks, formatted_chunks)
+        texts = [f"{chunk['content']}\n\n{chunk['context']}" for chunk in metadata]
+
+        self._embed_and_store(texts, metadata)
         self.save_db()
-        print("Vector database loaded and saved.")
+        print(f"Vector database loaded and saved to {self.db_path}.")
 
     def _embed_and_store(self, texts, data):
         batch_size = 128
