@@ -7,14 +7,14 @@ from src.process_chat.process import PreProcessChatText
 from src.util.util import load_json_file
 
 class VectorDB:
-    def __init__(self, db_path, api_key=None):
+    def __init__(self, db_path="./data/db/vector_db.pkl", api_key=None):
         if api_key is None:
             api_key = os.getenv("VOYAGE_API_KEY")
         self.client = voyageai.Client(api_key=api_key)
         self.embeddings = []
         self.metadata = []
         self.query_cache = {}
-        self.db_path = db_path # f"{db_directory}/vector_db.pkl"
+        self.db_path = db_path
 
     def load_data(self, chunk_path=None):
         if self.embeddings and self.metadata:

@@ -1,9 +1,11 @@
+This project is to effectively retrieve relevant text from past ai conversations, thereby reducing effort re-explaining context when switching to new chat, or searching for a past decision/insight in conversation history.
+
 ### Get Started
 ```
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-python main.py
+python main.py #TODO
 ```
 
 ### workflow
@@ -14,42 +16,76 @@ python main.py
 3. Embed: enriched `chunks.json` → `vector_db.pkl`
 4. Retrieve: query against `vector_db.pkl`
 
-Structure (per chat):
-./data/chats/chat_uuid_or_title/  # Processing workspace
-  ├── chat_history.txt   # chat history in plain text
-  ├── flow.txt           # Conversation flow/summary for context
-  ├── chunks.json        # Chunked + contextualized content
-└── vector_db.pkl      # Embeddings
+### project structure
+```
+/
+├── src/
+│   ├── __init__.py
+│   ├── process_chat/               # Load text + chunk
+│   │   ├── __init__.py
+│   │   └── process_chat_text.py
+│   ├── add_context/                # Add context to chunks
+│   │   └── situate_context.py
+│   ├── vector_store/               # Vector DB, loading existing db or create new db, embed, save db, similarity search
+│   │   ├── __init__.py
+│   │   └── vector_db.py
+├── data/
+├── requirements.txt
+├── .env
+└── main.py
+```
 
+I added data directory to gitignore #TODO
+```
 ./data/
   ├── raw/
-        ├── processed_chats
-  │         ├── chat_history.txt
-        └── to_be_processed_chats  
-  ├── processing_workspaces/
+  │     ├── processed_chats
+  │     │   └── chat_history_processed.txt
+  │     └── to_be_processed_chats  
+  ├── processing_workspaces/    # Processing workspace
   │   └── chat_uuid_or_title/
-  │       ├── chat_history.txt
-  │       ├── flow.txt
-  │       └── chunks.json
-  └── vector_db/
-      ├── vector_db.pkl
+  │       ├── chat_history.txt   # chat history in plain text
+  │       ├── flow.txt           # Conversation flow/summary for context
+  │       └── chunks.json        # Chunked + contextualized content
+  └── db/
+      ├── vector_db.pkl           # in memory vector DB of embeddings
       └── manifest.json           # "what's embedded?"
+```
 
 basic manifest file:
 {
-  "last_updated": "2024-12-26", # this should be a timestamp automatically generated from running embed. for now i hard code.
-  "embedded_chats": [
-    {
-      "url": "https://claude.ai/chat/4e5db666-5634-40db-b07e-4c59464c7dad",
-      "title": "Plan Chat Retrieval Project",
-      "directory": "./data/chats/chat_plan_version",
-      "chunk_count": 54
-    }
-  ]
+    "last_updated": "2024-12-26",
+    "embedded_chats": [
+        {
+            "url": "https://claude.ai/chat/4e5db666-5634-40db-b07e-4c59464c7dad",
+            "title": "Plan Chat Retrieval Project",
+            "directory": "./data/chats/chat_plan_version",
+            "chunk_count": 54,
+            "embedded_timestamp": "2024-12-26"
+        }
+    ]
 }
 
 ### Current Plan
-**Current Focus: contextual embedding**
+**Current Stage:**
+High Priority:
+
+Move to single combined vector_db.pkl (enables searching across all chats)
+Add basic manifest file (solves "what's embedded?" problem)
+Add chat metadata to chunks.json (maintains traceability)
+
+Medium Priority:
+
+Standardize file structure (makes batch processing easier)
+Add validation methods (prevents duplicate embedding)
+Chain the processing flow (reduces errors)
+
+Low Priority:
+
+Batch processing capability
+Enhanced manifest features
+Processing status tracking
+
 1. Priority Implementation:
    - Enhanced Context Generation:
      - Topic identification from flow summary

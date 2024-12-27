@@ -51,7 +51,7 @@ def main(args):
 
     if args.retrieve:
         vector_db = VectorDB(
-            db_path="./data/chats/vector_db.pkl",
+            db_path="./data/db/vector_db.pkl",
             api_key=os.getenv('VOYAGE_API_KEY')
         )
         vector_db.load_data()
