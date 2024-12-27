@@ -1,4 +1,24 @@
-This project is to effectively retrieve relevant text from past ai conversations, thereby reducing effort re-explaining context when switching to new chat, or searching for a past decision/insight in conversation history.
+# LLM Conversation Contextual Retrieval
+
+A tool to effectively search and retrieve from conversation histories of large language model (Claude, ChatGPT), thereby reducing effort re-explaining context when switching to new chat, or searching for a past decision/insight in conversation history.
+
+I took some ideas from [Anthropic's blog](https://www.anthropic.com/news/contextual-retrieval)
+- Anthropic: prompt llm to generate a concise explaination of a chunk of document based on the overall document
+- Applying to llm conversation: Given a summary of conversation flow, index of the chunk, and the chunk, return a concise context for this chunk of chat based on the overal conversation flow progression.
+
+- Anthropic: use reranking to filter relevant retrieved results
+- Applying to llm conversation: temporal re-ranking to reconstruct decision/topic progression
+
+## Why This Project Exists
+
+When working on complex projects with Large Language Model(LLM), I often need to revisit past decisions and insights.
+- Documenting in real time interrupts flow
+
+- Let llm summarize the conversation has two problems:
+  1. Some details are lost
+  2. Some discussions only needed later in the project
+
+
 
 ### Get Started
 ```
@@ -9,12 +29,13 @@ python main.py #TODO
 ```
 
 ### workflow
-1. Chunk text: `chat_history.txt` → `chunks.json`
-2. Add context: 
-  1. use prompt in `prompt_summary_flow.txt` to summarize the conversation flow
-  2. `chunks.json` + `flow.txt` to llm → enriched `chunks.json`
+1. Download chat history. I use [this Chrome extension for Claude](https://chromewebstore.google.com/detail/claude-share/khnkcffkddpblpjfefjalndfpgbbjfpc)
+2. Use prompt in `./prompt_summary_flow.txt` to summarize the conversation flow -> `flow.txt`
+3. Chunk text: `chat_history.txt` → `chunks.json`
+4. Add context: 
+  `chunks.json` + `flow.txt` to llm → enriched `chunks.json`
 3. Embed: enriched `chunks.json` → `vector_db.pkl`
-4. Retrieve: query against `vector_db.pkl`
+4. Search: query against `vector_db.pkl`
 
 ### project structure
 ```
