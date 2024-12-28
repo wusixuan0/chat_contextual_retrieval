@@ -1,53 +1,57 @@
-# For `main.py`, think about what a user of your retrieve context system would need to do:
-# - System initialization and configuration
-# - The actual execution flow/usage of retrieve context (Load their chat documents, input query and get relevant context)
-# - usage example
-
 import os
+import time
+import argparse
 from dotenv import load_dotenv
 from src.vector_store.vector_db import VectorDB
 from src.util.util import write_text_file, read_text_file, write_json_file, load_json_file
-import time
-import argparse
 from src.add_context.situate_context import situate_context
 
+def process_chat(uuid, registry):
+    try:
+        # 1. Update registry status to "processing"
+        registry.mark_chat_processing(uuid)
+        
+        # 2. Process in sequence with temp files
+        text_file_path = f'data/raw/{uuid}.txt'
+        temp_chunks = process_chunks(text_file_path, uuid)
+        save_temp_chunks(temp_chunks, f'temp_{uuid}_chunks.json')
+        
+        flow_text = get_flow_text()  # however you handle flow.txt
+        enriched_chunks = add_context(temp_chunks, flow_text)
+        save_temp_chunks(enriched_chunks, f'temp_{uuid}_enriched.json')
+        
+        # 3. Atomic vector db update
+        vector_db = VectorDB(db_path="./data/db/vector_db.pkl")
+        vector_db.atomic_update(enriched_chunks)
+        
+        # 4. Mark as complete in registry
+        registry.mark_chat_complete(uuid, chunk_count=len(enriched_chunks))
+        
+        # 5. Clean up temp files
+        cleanup_temp_files(uuid)
+        
+    except Exception as e:
+        # If anything fails, mark as failed in registry
+        registry.mark_chat_failed(uuid, error=str(e))
+        cleanup_temp_files(uuid)
+        raise e
 
 def main(args):
-    # if args.test_util:
-    #     import sys
-    #     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    #     from util.llm_call import get_llm
-
-    if args.message_array_to_text:
-        from data.chats.chat_prompt_gemini.messages_array import history
-        chat_history = ''.join([part for message in history for part in message['parts']])
-        write_text_file(chat_history, 'data/chats/chat_prompt_gemini/chat_history.txt')
-
-    if args.chunk_text:
-        text_file_path = 'data/chats/chat_prompt_gemini/chat_history.txt'
-        chat_history = read_text_file(text_file_path)
-
+    if args.process:
         from src.process_chat.process import PreProcessChatText
         preprocessor = PreProcessChatText()
-        formatted_chunks = preprocessor.process_chat(file_dir='data/chats/chat_prompt_gemini', file_name='chat_history.txt') # formatted_chunks saved to f"{file_dir}/chunks.json"
+        uuids_to_be_processed = preprocessor.extract_uuids_to_be_processed() # currently using file name, change to check embedded status in registry
 
-    if args.add_context:
-        chunk_file_path = 'data/chats/chat_prompt_gemini/chunks.json'
-        text_file_path = 'data/chats/chat_prompt_gemini/flow.txt'
-        situate_context(chunk_file_path, text_file_path)
-
-    if args.embed:
-        load_dotenv()
-        directory = "./data/chats/chat_prompt_gemini"
-
-        # Initialize the VectorDB
-        vector_db = VectorDB(
-            db_path=f"{directory}vector_db.pkl",
-            api_key=os.getenv('VOYAGE_API_KEY')
-        )
-
-        # Load existing or create new vector db
-        vector_db.load_data(chunk_path=f"{directory}/chunks.json")
+        for uuid in uuids_to_be_processed:
+            text_file_path = f'data/raw/{uuid}.txt'
+            preprocessor.split_chat(file_path=f'./data/raw/{uuid}.txt', uuid=uuid) # chunks automatically saved to "./data/chunks.json", will refactor. i save to json here because the operation used to be separate.
+            chunk_path = "./data/chunks.json"
+            situate_context(chunk_path, text_file_path) # context saved to "./data/chunks.json"
+            vector_db = VectorDB(
+                db_path="./data/db/vector_db.pkl",
+                api_key=os.getenv('VOYAGE_API_KEY')
+            )
+            vector_db.load_data(chunk_path=chunk_path)
 
     if args.retrieve:
         vector_db = VectorDB(
@@ -67,6 +71,7 @@ if __name__ == "__main__":
     parser.add_argument('--add_context', action='store_true')
     parser.add_argument('--embed', action='store_true')
     parser.add_argument('--retrieve', action='store_true')
+    parser.add_argument('--process', action='store_true')
     
     args = parser.parse_args()
     main(args)

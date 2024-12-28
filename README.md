@@ -29,17 +29,27 @@ python main.py #TODO
 ```
 
 ### workflow
-1. Download chat history. I use [this Chrome extension for Claude](https://chromewebstore.google.com/detail/claude-share/khnkcffkddpblpjfefjalndfpgbbjfpc)
-2. Use prompt in `./prompt_summary_flow.txt` to summarize the conversation flow -> `flow.txt`
-3. Chunk text: `chat_history.txt` → `chunks.json`
+1. Download chat history as text and add file to raw/ as {uuid}.txt.
+  - I use [this Chrome extension for Claude](https://chromewebstore.google.com/detail/claude-share/khnkcffkddpblpjfefjalndfpgbbjfpc)
+
+2. Add basic entry (url) to chat_registry.json. optional: uuid can be inferred from url, title can be generated in summarize conversation flow.
+3. 
+- Use prompt in `./prompt_summary_flow.txt` to summarize the conversation flow -> `flow.txt`
+- Chunk text: `chat_history.txt` → `chunks.json`
 4. Add context: 
   `chunks.json` + `flow.txt` to llm → enriched `chunks.json`
-3. Embed: enriched `chunks.json` → `vector_db.pkl`
-4. Search: query against `vector_db.pkl`
+5. Embed: enriched `chunks.json` → `vector_db.pkl`
+6. Search: query against `vector_db.pkl`
 
 ### project structure
 ```
 /
+├── data/
+│   ├── chat_registry.json
+│   ├── db/
+│   │   └── vector_db.pkl
+│   └── raw/
+│       └── 934f25ea-6010-468e-8104-512b5d1c23e8.txt
 ├── src/
 │   ├── __init__.py
 │   ├── process_chat/               # Load text + chunk
@@ -50,42 +60,33 @@ python main.py #TODO
 │   ├── vector_store/               # Vector DB, loading existing db or create new db, embed, save db, similarity search
 │   │   ├── __init__.py
 │   │   └── vector_db.py
-├── data/
 ├── requirements.txt
 ├── .env
 └── main.py
 ```
 
-I added data directory to gitignore #TODO
+chat_registry.json example:
 ```
-./data/
-  ├── raw/
-  │     ├── processed_chats
-  │     │   └── chat_history_processed.txt
-  │     └── to_be_processed_chats  
-  ├── processing_workspaces/    # Processing workspace
-  │   └── chat_uuid_or_title/
-  │       ├── chat_history.txt   # chat history in plain text
-  │       ├── flow.txt           # Conversation flow/summary for context
-  │       └── chunks.json        # Chunked + contextualized content
-  └── db/
-      ├── vector_db.pkl           # in memory vector DB of embeddings
-      └── manifest.json           # "what's embedded?"
-```
-
-basic manifest file:
 {
-    "last_updated": "2024-12-26",
-    "embedded_chats": [
+    "last_updated": "2024-12-28",
+    "chats": [
         {
-            "url": "https://claude.ai/chat/4e5db666-5634-40db-b07e-4c59464c7dad",
+            "uuid": "4e5db666-5634-40db-b07e-4c59464c7dad",
             "title": "Plan Chat Retrieval Project",
-            "directory": "./data/chats/chat_plan_version",
-            "chunk_count": 54,
-            "embedded_timestamp": "2024-12-26"
+            "url": "https://claude.ai/chat/4e5db666-5634-40db-b07e-4c59464c7dad",
+            "file_path": "./data/raw/4e5db666-5634-40db-b07e-4c59464c7dad.txt",
+            "status": {
+                "embedded": true,
+                "embedded_timestamp": "2024-12-28T10:30:00Z",
+                "chunk_count": 54
+            }
         }
     ]
 }
+```
+
+### TODO
+remove `./data` from .gitignore
 
 ### Current Plan
 **Current Stage:**
@@ -153,9 +154,3 @@ V5 (enhance embedding):
 - Dynamic chunk sizing based on content importance
 - Context compression for older content
 - Progressive disclosure based on relevance
-
-VN
-- Automated chat selection
-
-### TODO
-remove unuse packages from requirements.txt

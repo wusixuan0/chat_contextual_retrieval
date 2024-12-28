@@ -1,12 +1,6 @@
-anthropic
 voyageai
-pandas
-numpy
-matplotlib
-seaborn
-scikit-learn
-python-dotenv
 langchain
 langchain-community
 google-generativeai
+python-dotenv
 ratelimit

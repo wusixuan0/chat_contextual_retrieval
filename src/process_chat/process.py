@@ -1,25 +1,96 @@
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
-from src.util.util import write_json_file
+from src.util.util import write_json_file, load_json_file
+from typing import Set, Dict
+import os
+import re
 # from src.add_context.situate_context import situate_context
 
 class PreProcessChatText:
-    def __init__(self, name='chats'):
-        self.name = name
-
-    def process_chat(self, file_dir, file_name='chat_history.txt'):
-        file_path = f"{file_dir}/{file_name}"
+    def split_chat(self, file_path, uuid):
         docs = self._load_text_file(file_path)
         doc_chunks = self._split_documents(docs)
 
         # convert doc to string because VoyageAI takes plain text
-        string_chunks = [doc_chunks[i].page_content for i in range(len(doc_chunks))]
+        chunks = [
+            {
+                "content": doc_chunks[i].page_content,
+                "metadata": {
+                    "file_path": file_path,
+                    "uuid": uuid,
+                    "i": i,
+                    # "url": "https://claude.ai/chat/4e5db666...",
+                    # "title": "Plan Contextual Retrieval Project",
+                    # "status": {
+                    #     "embedded": false,
+                    #     "embedded_timestamp": "2024-12-26T10:30:00Z",
+                    #     "chunk_count": 54
+                    # }
+                },
+            } for i in range(len(doc_chunks))]
 
         # Format chunk to store in metadata
-        formatted_chunks = self._process_chunks(string_chunks)
-        write_json_file(data=formatted_chunks, file_path=f"{file_dir}/chunks.json")
+        write_json_file(data=chunks, file_path="./data/db/chunks.json")
 
-        return formatted_chunks
+        return chunks
+
+    def extract_uuids_to_be_processed(self):
+        uuids_raw = self.extract_uuids_from_files()
+        uuids_embedded = self.extract_embedded_chat_uuids()
+        return uuids_raw - uuids_embedded
+
+    def extract_uuids_from_files(self, folder_path: str="./data/raw") -> Set[str]:
+        """
+        Extract UUIDs from text files in a given folder where filenames are UUIDs.
+        
+        Args:
+            folder_path (str): Path to the folder containing text files
+            
+        Returns:
+            Set[str]: Set of UUIDs found in filenames
+            
+        Raises:
+            FileNotFoundError: If the folder path doesn't exist
+        """
+        # UUID pattern (8-4-4-4-12 format)
+        uuid_pattern = r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.txt$'
+        
+        # Check if folder exists
+        if not os.path.exists(folder_path):
+            raise FileNotFoundError(f"Folder not found: {folder_path}")
+        
+        uuids = set()
+        
+        # Iterate through files in the folder
+        for filename in os.listdir(folder_path):
+            # Check if file matches UUID pattern
+            if re.match(uuid_pattern, filename.lower()):
+                # Extract UUID by removing .txt extension
+                uuid = filename[:-4]  # Remove '.txt'
+                uuids.add(uuid)
+        
+        return uuids
+
+    def extract_embedded_chat_uuids(self) -> Set[str]:
+        """
+        Extract all UUIDs from the embedded_chats array from manifest.json
+        
+        Returns:
+            Set[str]: Set of UUID strings
+        
+        Example:
+            data = {
+                "last_updated": "2024-12-26",
+                "embedded_chats": [
+                    {"uuid": "4e5db666-5634-40db-b07e-4c59464c7dad"},
+                    {"uuid": "another-uuid-here"}
+                ]
+            }
+            uuids = extract_embedded_chat_uuids(data)
+            # Returns: {'4e5db666-5634-40db-b07e-4c59464c7dad', 'another-uuid-here'}
+        """
+        data = load_json_file("./data/db/manifest.json")
+        return {chat["uuid"] for chat in data.get("embedded_chats", [])}
 
     def _load_text_file(self, file_path):
         loader = TextLoader(file_path, encoding='utf-8')
@@ -28,21 +99,3 @@ class PreProcessChatText:
     def _split_documents(self, documents, chunk_size=1000, chunk_overlap=0):
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         return text_splitter.split_documents(documents)
-
-    def _process_chunks(self, chunks):
-        """
-        TODO: chat_dict: list of dicts with format:
-        {
-            "original_content": "full chat content",
-            "title": "chat title",
-            "link": "link to chat"
-        }
-        """
-        processed_chunks = []
-        for i, chunk in enumerate(chunks):
-            processed_chunks.append({
-                "i": i,
-                "content": chunk,
-            })
-        
-        return processed_chunks

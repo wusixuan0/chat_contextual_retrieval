@@ -23,3 +23,8 @@ def load_json_file(file_path):
     with open(file_path, 'r') as f:
         data = json.load(f)
     return data
+
+def messages_array_to_text(history, file_path):
+    # turn messages array to plain text (for gemini-2.0-flash-thinking-exp)
+    chat_history = ''.join([part for message in history for part in message['parts']])
+    write_text_file(chat_history, file_path)
