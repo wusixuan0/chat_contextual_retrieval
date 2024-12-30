@@ -5,16 +5,16 @@ from dotenv import load_dotenv
 from src.vector_store.vector_db import VectorDB
 from src.util.util import write_text_file, read_text_file, write_json_file, load_json_file
 from src.add_context.situate_context import situate_context
+from src.registry.registry import ChatRegistry
 
-def process_chat(uuid, registry):
+def process_chat(chat_data, registry):
     try:
         # 1. Update registry status to "processing"
-        registry.mark_chat_processing(uuid)
+        registry.mark_chat_processing(chat_data['uuid'])
         
         # 2. Process in sequence with temp files
-        text_file_path = f'data/raw/{uuid}.txt'
-        temp_chunks = process_chunks(text_file_path, uuid)
-        save_temp_chunks(temp_chunks, f'temp_{uuid}_chunks.json')
+        temp_chunks = split_chat(chat_data)
+        save_temp_chunks(temp_chunks, f'temp_{chat_data['uuid']}_chunks.json')
         
         flow_text = get_flow_text()  # however you handle flow.txt
         enriched_chunks = add_context(temp_chunks, flow_text)
@@ -36,22 +36,38 @@ def process_chat(uuid, registry):
         cleanup_temp_files(uuid)
         raise e
 
-def main(args):
-    if args.process:
-        from src.process_chat.process import PreProcessChatText
-        preprocessor = PreProcessChatText()
-        uuids_to_be_processed = preprocessor.extract_uuids_to_be_processed() # currently using file name, change to check embedded status in registry
+def process_all_chats(registry):
+    from src.process_chat.process import PreProcessChatText
+    preprocessor = PreProcessChatText()
+    uuids_to_be_processed = preprocessor.extract_uuids_to_be_processed() # currently using file name, change to check embedded status in registry
 
-        for uuid in uuids_to_be_processed:
-            text_file_path = f'data/raw/{uuid}.txt'
-            preprocessor.split_chat(file_path=f'./data/raw/{uuid}.txt', uuid=uuid) # chunks automatically saved to "./data/chunks.json", will refactor. i save to json here because the operation used to be separate.
-            chunk_path = "./data/chunks.json"
-            situate_context(chunk_path, text_file_path) # context saved to "./data/chunks.json"
-            vector_db = VectorDB(
-                db_path="./data/db/vector_db.pkl",
-                api_key=os.getenv('VOYAGE_API_KEY')
-            )
-            vector_db.load_data(chunk_path=chunk_path)
+    for uuid in uuids_to_be_processed:
+        text_file_path = f'data/raw/{uuid}.txt'
+        preprocessor.split_chat(file_path=f'./data/raw/{uuid}.txt', uuid=uuid) # chunks automatically saved to "./data/chunks.json", will refactor. i save to json here because the operation used to be separate.
+        chunk_path = "./data/chunks.json"
+        situate_context(chunk_path, text_file_path) # context saved to "./data/chunks.json"
+        vector_db = VectorDB(
+            db_path="./data/db/vector_db.pkl",
+            api_key=os.getenv('VOYAGE_API_KEY')
+        )
+        vector_db.load_data(chunk_path=chunk_path)
+
+def main(args):
+    registry = ChatRegistry(registry_path="./data/chat_registry.json")
+
+    if args.process_all:
+        unprocessed_chats = registry.get_unprocessed_chats()
+
+        for chat in unprocessed_chats:
+            process_chat(chat, registry)
+
+    elif args.process:
+        # Process specific UUIDs
+        uuids = args.process.split(',')  # comma-separated UUIDs
+        unprocessed_chats = registry.get_chats(uuids)
+
+        for chat in unprocessed_chats:
+            process_chat(chat, registry)
 
     if args.retrieve:
         vector_db = VectorDB(
@@ -66,12 +82,9 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='chat retrieval')
-    parser.add_argument('--message_array_to_text', action='store_true')
-    parser.add_argument('--chunk_text', action='store_true')
-    parser.add_argument('--add_context', action='store_true')
-    parser.add_argument('--embed', action='store_true')
+    parser.add_argument('--process_all', action='store_true')
+    parser.add_argument("--process", type=str, help="Comma-separated list of UUIDs to process.")
     parser.add_argument('--retrieve', action='store_true')
-    parser.add_argument('--process', action='store_true')
     
     args = parser.parse_args()
     main(args)

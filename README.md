@@ -52,6 +52,9 @@ python main.py #TODO
 │       └── 934f25ea-6010-468e-8104-512b5d1c23e8.txt
 ├── src/
 │   ├── __init__.py
+│   ├── registry/                   # ChatRegistry
+│   │   ├── __init__.py
+│   │   └── registry.py
 │   ├── process_chat/               # Load text + chunk
 │   │   ├── __init__.py
 │   │   └── process_chat_text.py
@@ -60,6 +63,9 @@ python main.py #TODO
 │   ├── vector_store/               # Vector DB, loading existing db or create new db, embed, save db, similarity search
 │   │   ├── __init__.py
 │   │   └── vector_db.py
+│   ├── util/
+│   │   ├── llm_call.py
+│   │   └── util.py
 ├── requirements.txt
 ├── .env
 └── main.py

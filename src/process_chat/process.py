@@ -7,27 +7,24 @@ import re
 # from src.add_context.situate_context import situate_context
 
 class PreProcessChatText:
-    def split_chat(self, file_path, uuid):
+    def split_chat(self, chat_data):
+        file_path = chat_data["file_path"] or f'data/raw/{chat_data["uuid"]}.txt'
         docs = self._load_text_file(file_path)
         doc_chunks = self._split_documents(docs)
 
-        # convert doc to string because VoyageAI takes plain text
         chunks = [
             {
                 "content": doc_chunks[i].page_content,
                 "metadata": {
-                    "file_path": file_path,
-                    "uuid": uuid,
+                    "uuid": chat_data["uuid"],
                     "i": i,
-                    # "url": "https://claude.ai/chat/4e5db666...",
-                    # "title": "Plan Contextual Retrieval Project",
-                    # "status": {
-                    #     "embedded": false,
-                    #     "embedded_timestamp": "2024-12-26T10:30:00Z",
-                    #     "chunk_count": 54
-                    # }
+                    "file_path": file_path,
+                    # Pull these from registry for consistency:
+                    "url": chat_data["url"],
+                    "title": chat_data["title"],
                 },
-            } for i in range(len(doc_chunks))]
+            } for i in range(len(doc_chunks))
+        ]
 
         # Format chunk to store in metadata
         write_json_file(data=chunks, file_path="./data/db/chunks.json")
