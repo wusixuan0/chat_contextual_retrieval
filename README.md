@@ -18,8 +18,6 @@ When working on complex projects with Large Language Model(LLM), I often need to
   1. Some details are lost
   2. Some discussions only needed later in the project
 
-
-
 ### Get Started
 ```
 python3 -m venv venv
@@ -41,6 +39,43 @@ python main.py #TODO
 5. Embed: enriched `chunks.json` → `vector_db.pkl`
 6. Search: query against `vector_db.pkl`
 
+### Issues
+- Plain Text Format Issue:
+  - The plain text format human: ... Claude: ... will hinder the quality of the conversation flow summary.
+
+- similarity score low when searching keywords (exact match in conversation)
+
+- chat_registry.json format:
+```
+{
+    "last_updated": "2024-12-28",
+    "chats": [
+        {
+            "uuid": "4e5db666-5634-40db-b07e-4c59464c7dad",
+            "title": "Plan Chat Retrieval Project",
+            "url": "https://claude.ai/chat/4e5db666-5634-40db-b07e-4c59464c7dad",
+            "content_file_path": "./data/raw/4e5db666-5634-40db-b07e-4c59464c7dad.txt",
+            "status": {
+                "embedded": true,
+                "embedded_timestamp": "2024-12-28T10:30:00Z",
+                "chunk_count": 54
+            }
+        }
+    ]
+}
+
+{
+  "chats": {
+    "934f25ea-6010-468e-8104-512b5d1c23e8": {
+      "title": "Designing a Vector Database for Chat History Management: From Code Analysis to Implementation Strategy",
+      "url": "https://claude.ai/chat/934f25ea-6010-468e-8104-512b5d1c23e8",
+      "added_timestamp": "2024-12-27",
+      "status": "unprocessed"
+    }
+  }
+}
+```
+
 ### project structure
 ```
 /
@@ -55,9 +90,12 @@ python main.py #TODO
 │   ├── registry/                   # ChatRegistry
 │   │   ├── __init__.py
 │   │   └── registry.py
-│   ├── process_chat/               # Load text + chunk
+├── processor/                   # module for atomic processing
+│   ├── __init__.py
+│   └── processor.py            # Orchestrates the whole process
+│   ├── chunk/               # Load text files + chunk
 │   │   ├── __init__.py
-│   │   └── process_chat_text.py
+│   │   └── load_chunk.py
 │   ├── add_context/                # Add context to chunks
 │   │   └── situate_context.py
 │   ├── vector_store/               # Vector DB, loading existing db or create new db, embed, save db, similarity search
@@ -71,25 +109,6 @@ python main.py #TODO
 └── main.py
 ```
 
-chat_registry.json example:
-```
-{
-    "last_updated": "2024-12-28",
-    "chats": [
-        {
-            "uuid": "4e5db666-5634-40db-b07e-4c59464c7dad",
-            "title": "Plan Chat Retrieval Project",
-            "url": "https://claude.ai/chat/4e5db666-5634-40db-b07e-4c59464c7dad",
-            "file_path": "./data/raw/4e5db666-5634-40db-b07e-4c59464c7dad.txt",
-            "status": {
-                "embedded": true,
-                "embedded_timestamp": "2024-12-28T10:30:00Z",
-                "chunk_count": 54
-            }
-        }
-    ]
-}
-```
 
 ### TODO
 remove `./data` from .gitignore

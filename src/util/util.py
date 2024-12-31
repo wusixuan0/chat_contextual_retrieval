@@ -1,4 +1,16 @@
 import json
+# from filelock import FileLock
+# TODO: add filelock
+
+# def atomic_write_json(data, file_path):
+#     lock_path = f"{file_path}.lock"
+#     with FileLock(lock_path):
+#         # Write to temp file
+#         temp_path = f"{file_path}.temp"
+#         with open(temp_path, 'w') as f:
+#             json.dump(data, f)
+#         # Atomic rename
+#         os.replace(temp_path, file_path)
 
 def read_text_file(file_path):
     """Reads the entire content of a text file as a single string."""

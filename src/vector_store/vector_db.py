@@ -3,8 +3,6 @@ import pickle
 import json
 import numpy as np
 import voyageai
-from src.process_chat.process import PreProcessChatText
-from src.util.util import load_json_file
 
 class VectorDB:
     def __init__(self, db_path="./data/db/vector_db.pkl", api_key=None):
@@ -16,26 +14,28 @@ class VectorDB:
         self.query_cache = {}
         self.db_path = db_path
 
-    def load_data(self, chunk_path=None):
-        if self.embeddings and self.metadata:
-            print("Vector database is already loaded. Skipping data loading.")
-            return
+    def load_data(self, chunks=None):
         if os.path.exists(self.db_path):
             print("Loading vector database from disk.")
             self.load_db()
             return
 
-        print("Creating new vector database.")
+        if not chunks: return
+        print("Embedding new chunks.")
 
-        metadata = load_json_file(chunk_path) # f"{directory}/chunks.json"
+        new_texts = [f"{chunk['content']}\n\n{chunk['context']}" for chunk in chunks]
+        
+        # Embed new chunks
+        new_embeddings = self._create_embeddings(new_texts)
+        
+        # Append new data
+        self.embeddings.extend(new_embeddings)
+        self.metadata.extend(chunks)
 
-        texts = [f"{chunk['content']}\n\n{chunk['context']}" for chunk in metadata]
-
-        self._embed_and_store(texts, metadata)
         self.save_db()
-        print(f"Vector database loaded and saved to {self.db_path}.")
+        print(f"Vector database updated and saved to {self.db_path}")
 
-    def _embed_and_store(self, texts, data):
+    def _create_embeddings(self, texts):
         batch_size = 128
         result = [
             self.client.embed(
@@ -44,8 +44,7 @@ class VectorDB:
             ).embeddings
             for i in range(0, len(texts), batch_size)
         ]
-        self.embeddings = [embedding for batch in result for embedding in batch]
-        self.metadata = data
+        return [embedding for batch in result for embedding in batch]
 
     def search(self, query, k=5, similarity_threshold=0.75):
         if query in self.query_cache:
@@ -71,6 +70,16 @@ class VectorDB:
                 
                 if len(top_examples) >= k:
                     break
+
+        # If not enough examples found, add top 3
+        if not top_examples:
+            for idx in top_indices[:3]:
+                example = {
+                    "metadata": self.metadata[idx],
+                    "similarity": similarities[idx],
+                }
+                top_examples.append(example)
+
         self.save_db()
         return top_examples
 

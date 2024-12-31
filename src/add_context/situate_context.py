@@ -2,20 +2,18 @@
 from src.util.llm_call import get_llm
 from src.util.util import read_text_file, write_json_file, load_json_file
 
-def situate_context(chunk_file_path, text_file_path):
-    formatted_chunks = load_json_file(chunk_file_path)
-    conversation_flow_summary = read_text_file(text_file_path)
-    num_chunks = len(formatted_chunks)
+def situate_context(chunks, conversation_flow_summary, chunk_file_path):
+    num_chunks = len(chunks)
 
     for i in range(num_chunks):
-        chunk = formatted_chunks[i]
+        chunk = chunks[i]
 
         if "context" in chunk: continue
 
         context_generation_prompt = generate_context_prompt(
             flow_summary=conversation_flow_summary,
             chunk_content=chunk["content"],
-            index=chunk["i"],
+            index=i,
             num_chunks=num_chunks,
         )
         try:
@@ -24,9 +22,34 @@ def situate_context(chunk_file_path, text_file_path):
             chunk["context"] = response_text
         except Exception as e:
             print(f"Error occurred at chunk {i}: {str(e)}")
-            write_json_file(formatted_chunks, chunk_file_path)
+            write_json_file(chunks, chunk_file_path)
             raise
-    write_json_file(formatted_chunks, chunk_file_path)
+    write_json_file(chunks, chunk_file_path)
+
+    return chunks
+
+def generate_flow_prompt(chat_content):
+    return f"""
+Analyze the provided conversation history between a human and an LLM. Summarize the key design decisions, architectural choices, and insights, focusing on the evolution of the proposed system. Present your analysis in a structured format that includes:
+
+TOPIC: Major discussion areas (e.g., Initial System Design Problem, Atomic Updates Design, etc.)
+
+BRANCH: Key decision points or transitions where multiple options were considered, specifically calling them out as "Options: 1, 2, 3", where they were explored (not always applicable)
+
+INSIGHT: Important realizations or design principles that guided decision-making.
+
+LINK: Explicit connections between topics or decisions. Note that some items are naturally connected, while others may need explicit mention for a well-structured analysis.
+
+PARK: Topics or considerations that were deferred for later discussion or implementation, again noting the connections where needed.
+
+Emphasize the overall system evolution and architectural principles. Aim for a high-level overview that captures the essence of the design process.
+
+Here is the conversation:
+
+<conversation>
+{chat_content}
+</conversation>
+"""
 
 def generate_context_prompt(flow_summary, chunk_content, index, num_chunks):
     return f"""
