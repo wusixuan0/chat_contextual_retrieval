@@ -2,7 +2,7 @@
 from src.util.llm_call import get_llm
 from src.util.util import read_text_file, write_json_file, load_json_file
 
-def situate_context(chunks, conversation_flow_summary, chunk_file_path):
+def situate_context(chunks, conversation_flow_summary, enriched_chunks_path):
     num_chunks = len(chunks)
 
     for i in range(num_chunks):
@@ -22,9 +22,9 @@ def situate_context(chunks, conversation_flow_summary, chunk_file_path):
             chunk["context"] = response_text
         except Exception as e:
             print(f"Error occurred at chunk {i}: {str(e)}")
-            write_json_file(chunks, chunk_file_path)
+            write_json_file(chunks, enriched_chunks_path)
             raise
-    write_json_file(chunks, chunk_file_path)
+    write_json_file(chunks, enriched_chunks_path)
 
     return chunks
 

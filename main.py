@@ -8,37 +8,68 @@ from src.registry.registry import ChatRegistry
 from src.processor.processor import ChatProcessor
 
 load_dotenv()
-def main(args):
+
+def main():
     registry = ChatRegistry(registry_path="./data/chat_registry.json")
 
-    if args.process_all:
-        # Process all unprocessed chats
-        ChatProcessor(registry).process_all_chats()
+    parser = argparse.ArgumentParser(description='Claude Conversation Context Retrieval System')
+    subparsers = parser.add_subparsers(dest='command')
 
-    elif args.process:
-        # Process specific UUIDs
-        uuids = args.process.split(',')  # comma-separated UUIDs
-        unprocessed_chats = registry.get_chats(uuids)
+    # Add new chat
+    add = subparsers.add_parser('add', 
+        help='Add a new conversation to the system',
+        description="""
+        Add a new conversation export file to the system. The URL must be a Claude chat URL 
+        containing a UUID (e.g., https://claude.ai/chat/<uuid>). The conversation flow 
+        summary is optional but helps provide better context for retrieval.
+        """)
+    add.add_argument('--chat_path', 
+                required=True,
+                help='Path to chat conversation export file')
+    add.add_argument('--url',
+        required=True,
+        help='Claude conversation URL (must contain UUID)')
+    add.add_argument('--title',
+        help='Optional descriptive title for the conversation')
+    add.add_argument('--flow_path',
+        help='Optional path to conversation flow summary file (.txt)')
 
-        for chat in unprocessed_chats:
-            ChatProcessor(registry).process_chat(chat, registry)
+    # Search
+    search = subparsers.add_parser('search', help='Search through chats')
+    search.add_argument('query', help='Search query')
+    # search.add_argument('--mode', choices=['semantic', 'topic'], 
+    #                    default='semantic',
+    #                    help='Search mode: semantic for questions, topic for exploration')
 
-    if args.retrieve:
+    inspect_db = subparsers.add_parser('inspect_db', help='Inspect the vector database')
+    inspect_db.add_argument('--file_path', default='./data/db/inspect.json', help='Path to save the inspection results')
+
+    args = parser.parse_args()
+
+    if args.command == 'add':
+        ChatProcessor(registry).process_file(
+            chat_path=args.chat_path,
+            url=args.url,
+            title=args.title,
+            flow_path=args.flow_path
+        )
+
+    elif args.command == 'search':
+        query = args.query
+
         vector_db = VectorDB(
             db_path="./data/db/vector_db.pkl",
-            api_key=os.getenv('VOYAGE_API_KEY')
         )
-        vector_db.load_data()
+        vector_db.load_db()
 
-        query = "atomic update?"
         results = vector_db.search(query, 10)
         write_json_file(results, f'data/retrieved.json')
 
+    elif args.command == 'inspect_db':
+        vector_db = VectorDB(
+            db_path="./data/db/vector_db.pkl",
+        )
+        vector_db.inspect_db(args.file_path)
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='chat retrieval')
-    parser.add_argument('--process_all', action='store_true')
-    parser.add_argument("--process", type=str, help="Comma-separated list of UUIDs to process.")
-    parser.add_argument('--retrieve', action='store_true')
-    
-    args = parser.parse_args()
-    main(args)
+    main()

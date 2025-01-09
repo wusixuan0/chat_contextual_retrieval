@@ -19,25 +19,44 @@ When working on complex projects with Large Language Model(LLM), I often need to
   2. Some discussions only needed later in the project
 
 ### Get Started
+download the chat history as txt file (for example `~/Downloads/claude-conversation-2025-01-09.txt`).
+  - I use [this Chrome extension for Claude](https://chromewebstore.google.com/detail/claude-share/khnkcffkddpblpjfefjalndfpgbbjfpc)
+
+git clone the repo, then setup environment
 ```
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-python main.py #TODO
+```
+
+(Optional) Use prompt in `./prompt_summary_flow.txt` to summarize the conversation flow and save to a text file (e.g. `~/Downloads/flow.txt`)
+
+add and embed a conversation history:
+```
+# Minimal (mandatory parameters only)
+python main.py add \
+    --chat_path ~/Downloads/claude-conversation-2025-01-09.txt \
+    --url "https://claude.ai/chat/a729b08c-2fec-400d-b584-6e950dd5bc76"
+
+# All parameters
+python main.py add \                                         
+    --chat_path ~/Downloads/claude-conversation-2025-01-09.txt \
+    --url "https://claude.ai/chat/a729b08c-2fec-400d-b584-6e950dd5bc76" \
+    --title "Improving LLM Context Retrieval" \
+    --flow_path 
+```
+
+search in embeddings:
+```
+python main.py search "What are the key design decisions in this conversation?"
 ```
 
 ### workflow
-1. Download chat history as text and add file to raw/ as {uuid}.txt.
-  - I use [this Chrome extension for Claude](https://chromewebstore.google.com/detail/claude-share/khnkcffkddpblpjfefjalndfpgbbjfpc)
-
-2. Add basic entry (url) to chat_registry.json. optional: uuid can be inferred from url, title can be generated in summarize conversation flow.
-3. 
-- Use prompt in `./prompt_summary_flow.txt` to summarize the conversation flow -> `flow.txt`
-- Chunk text: `chat_history.txt` → `chunks.json`
-4. Add context: 
+1. Chunk text: `chat_history.txt` → `chunks.json`
+2. (if conversation flow summary is provided) Add context: 
   `chunks.json` + `flow.txt` to llm → enriched `chunks.json`
-5. Embed: enriched `chunks.json` → `vector_db.pkl`
-6. Search: query against `vector_db.pkl`
+3. Embed: enriched `chunks.json` → `vector_db.pkl`
+4. Search: query against `vector_db.pkl`
 
 ### Issues
 - Plain Text Format Issue:
@@ -45,36 +64,8 @@ python main.py #TODO
 
 - similarity score low when searching keywords (exact match in conversation)
 
-- chat_registry.json format:
-```
-{
-    "last_updated": "2024-12-28",
-    "chats": [
-        {
-            "uuid": "4e5db666-5634-40db-b07e-4c59464c7dad",
-            "title": "Plan Chat Retrieval Project",
-            "url": "https://claude.ai/chat/4e5db666-5634-40db-b07e-4c59464c7dad",
-            "content_file_path": "./data/raw/4e5db666-5634-40db-b07e-4c59464c7dad.txt",
-            "status": {
-                "embedded": true,
-                "embedded_timestamp": "2024-12-28T10:30:00Z",
-                "chunk_count": 54
-            }
-        }
-    ]
-}
-
-{
-  "chats": {
-    "934f25ea-6010-468e-8104-512b5d1c23e8": {
-      "title": "Designing a Vector Database for Chat History Management: From Code Analysis to Implementation Strategy",
-      "url": "https://claude.ai/chat/934f25ea-6010-468e-8104-512b5d1c23e8",
-      "added_timestamp": "2024-12-27",
-      "status": "unprocessed"
-    }
-  }
-}
-```
+### Why I'm using text file instead of `conversations.json`
+- messages in `conversations.json` is not in order
 
 ### project structure
 ```
@@ -108,74 +99,3 @@ python main.py #TODO
 ├── .env
 └── main.py
 ```
-
-
-### TODO
-remove `./data` from .gitignore
-
-### Current Plan
-**Current Stage:**
-High Priority:
-
-Move to single combined vector_db.pkl (enables searching across all chats)
-Add basic manifest file (solves "what's embedded?" problem)
-Add chat metadata to chunks.json (maintains traceability)
-
-Medium Priority:
-
-Standardize file structure (makes batch processing easier)
-Add validation methods (prevents duplicate embedding)
-Chain the processing flow (reduces errors)
-
-Low Priority:
-
-Batch processing capability
-Enhanced manifest features
-Processing status tracking
-
-1. Priority Implementation:
-   - Enhanced Context Generation:
-     - Topic identification from flow summary
-     - Simple importance weighting (high/medium/low)
-   - Interaction pattern recognition
-
-2. Evaluation & Testing:
-   - Manual evaluation comparing:
-     - Basic retrieval (current)
-     - Contextualized retrieval (new)
-     - Record qualitative observations
-   - Manual chat selection for quality control
-
-Chunking for V1:
-- Use simpler token-based chunking
-- Rely on context generation to compensate for splits
-- (TBD) to capture key moments with chunks larger than 1000, overlap=200
-
-### Tailoring solution to use case:
-- chat history has strong temporal relevance.
-- Include interaction patterns beyond just topic - consider adding dialog acts (question, explanation, exploration, decision, etc.)
-- Add importance weighting - have the LLM rate how central this chunk is to the main conversation flow
-
-### Future Plan
-V2 Simplified Testing Approach:
-   - Create a small test set of ~5 diverse conversations
-   - Define specific use cases (e.g., "finding previous technical decisions", "recalling action items")
-   - Enhanced Context Generation:
-     - Basic temporal markers ("early/middle/late")
-   - Larger chunks for key moments based on flow summary
-
-V3 (Testing & Optimization):
-- Proper evaluation framework
-  - Create synthetic conversations with known retrieval targets
-  - Define objective metrics (precision, recall for known items)
-  - Compare different chunking strategies with real data
-- Implement Q&A preservation if testing shows significant benefit
-  separators=["\n\nHuman:", "\n\nAssistant:"] # Preserve turn boundaries
-
-V4 (More Context enhancing):
-- add BM25 if code in chat matters
-
-V5 (enhance embedding):
-- Dynamic chunk sizing based on content importance
-- Context compression for older content
-- Progressive disclosure based on relevance

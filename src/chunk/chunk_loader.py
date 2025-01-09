@@ -7,20 +7,17 @@ import re
 
 class ChunkLoader:
     def load_chunks(self, chat_data):
-        file_path = chat_data.get("chat_file_path") or f'data/raw/{chat_data["uuid"]}.txt'
-        docs = self._load_text_file(file_path)
+        docs = self._load_text_file(chat_data.chat_file_path)
         doc_chunks = self._split_documents(docs)
 
         chunks = [
             {
                 "content": doc_chunks[i].page_content,
                 "metadata": {
-                    "uuid": chat_data["uuid"],
                     "i": i,
-                    "file_path": file_path,
-                    # Pull these from registry for consistency:
-                    "url": chat_data["url"],
-                    "title": chat_data["title"],
+                    # url and title are for identification during manual inspection
+                    "url": chat_data.url,
+                    **({"title": chat_data.title} if chat_data.title is not None else {})
                 },
             } for i in range(len(doc_chunks))
         ]

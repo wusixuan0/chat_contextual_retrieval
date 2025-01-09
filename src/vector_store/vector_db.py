@@ -3,6 +3,7 @@ import pickle
 import json
 import numpy as np
 import voyageai
+from src.util.util import write_json_file
 
 class VectorDB:
     def __init__(self, db_path="./data/db/vector_db.pkl", api_key=None):
@@ -18,12 +19,16 @@ class VectorDB:
         if os.path.exists(self.db_path):
             print("Loading vector database from disk.")
             self.load_db()
-            return
 
         if not chunks: return
         print("Embedding new chunks.")
 
-        new_texts = [f"{chunk['content']}\n\n{chunk['context']}" for chunk in chunks]
+        new_texts = []
+        for chunk in chunks:
+            if chunk.get('context'):
+                new_texts.append(f"{chunk['content']}\n\n{chunk['context']}")
+            else:
+                new_texts.append(chunk['content'])
         
         # Embed new chunks
         new_embeddings = self._create_embeddings(new_texts)
@@ -101,3 +106,10 @@ class VectorDB:
         self.embeddings = data["embeddings"]
         self.metadata = data["metadata"]
         self.query_cache = json.loads(data["query_cache"])
+
+    def inspect_db(self, file_path="./data/db/inspect.json"):
+        self.load_db()
+        write_json_file({
+            "metadata": self.metadata,
+            "query_cache": self.query_cache
+        }, file_path)

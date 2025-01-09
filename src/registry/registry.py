@@ -1,43 +1,67 @@
-from src.util.util import write_text_file, read_text_file, write_json_file, load_json_file
+# src/registry/registry.py
+import json
 from datetime import datetime
-# from filelock import FileLock
-# TODO: add filelock and error handling for data structure validation
-# if not isinstance(chat, dict) or 'uuid' not in chat:
-#     raise ValueError(f"Invalid chat data structure: {chat}")
+from src.types.chat_data import Registry, ChatEntry, ChatStatus
+
 class ChatRegistry:
     def __init__(self, registry_path='./data/chat_registry.json'):
         self.registry_path = registry_path
+        self.registry = self._load_registry()
 
-    def get_unprocessed_chats(self):
-        # Returns list of chat dicts from registry where status is missing
-        chats = self._load_registry()
-        return [chat for chat in chats['chats'] if 'status' not in chat or chat['status'] != "embedded"]
+    def _load_registry(self) -> Registry:
+        try:
+            with open(self.registry_path, 'r') as f:
+                data = json.load(f)
+                print("Loaded registry data:", json.dumps(data, indent=2))
+                return Registry.from_dict(data)
+        except FileNotFoundError:
+            # Initialize empty registry
+            return Registry(
+                last_updated=datetime.now().isoformat(),
+                chats={}
+            )
 
-    def get_chats(self, uuids):
-        # Returns list of chat dicts from registry matching given uuids
-        chats = self._load_registry()
-        return [chat for chat in chats['chats'] if chat['uuid'] in uuids]
+    def _save_registry(self):
+        with open(self.registry_path, 'w') as f:
+            json.dump(self.registry.to_dict(), f, indent=2)
 
-    def mark_chat_status(self, uuid, status):
-        # Atomic update to add status: "processing", "complete", "failed"
-        # with FileLock(self.registry_path + '.lock'):
-        chats = self._load_registry()
-        chat = self._find_chat(chats, uuid)
+    def add_chat(self, url: str, chat_file_path: str, uuid: str, 
+                 title: str = None, flow_file_path: str = None) -> str:
+        if uuid in self.registry.chats and self.registry.chats[uuid].status.state != "failed":
+            raise ValueError(f"Chat with UUID {uuid} already exists")
 
-        timestamp = datetime.now().isoformat()
-        chats['last_updated'] = timestamp
-        chat['status'] = {
-            'state': status,
-            'timestamp': timestamp
-        }
+        chat_entry = ChatEntry(
+            uuid=uuid,
+            url=url,
+            chat_file_path=chat_file_path,
+            title=title,
+            flow_file_path=flow_file_path
+        )
+        
+        self.registry.chats[uuid] = chat_entry
+        self.registry.last_updated = datetime.now().isoformat()
+        self._save_registry()
+        return uuid
 
-        self._save_registry(chats)
+    def mark_chat_status(self, uuid: str, state: str):
+        if uuid not in self.registry.chats:
+            raise ValueError(f"Chat with UUID {uuid} not found")
+            
+        chat = self.registry.chats[uuid]
+        chat.status = ChatStatus(
+            state=state,
+            timestamp=datetime.now().isoformat()
+        )
+        self.registry.last_updated = datetime.now().isoformat()
+        self._save_registry()
 
-    def _load_registry(self):
-        return load_json_file(file_path=self.registry_path)
+    def get_chat(self, uuid: str) -> ChatEntry:
+        if uuid not in self.registry.chats:
+            raise ValueError(f"Chat with UUID {uuid} not found")
+        return self.registry.chats[uuid]
 
-    def _save_registry(self, chats):
-        write_json_file(data=chats, file_path=self.registry_path)
-
-    def _find_chat(self, chats, uuid):
-        return [chat for chat in chats['chats'] if chat['uuid'] == uuid][0]
+    def get_unprocessed_chats(self) -> list[ChatEntry]:
+        return [
+            chat for chat in self.registry.chats.values()
+            if chat.status.state in ["processing", "failed"]
+        ]
