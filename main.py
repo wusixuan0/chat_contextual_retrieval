@@ -41,8 +41,7 @@ def main():
     #                    default='semantic',
     #                    help='Search mode: semantic for questions, topic for exploration')
 
-    inspect_db = subparsers.add_parser('inspect_db', help='Inspect the vector database')
-    inspect_db.add_argument('--file_path', default='./data/db/inspect.json', help='Path to save the inspection results')
+    inspect_db = subparsers.add_parser('db', help='Inspect the vector database content')
 
     args = parser.parse_args()
 
@@ -65,11 +64,15 @@ def main():
         results = vector_db.search(query, 10)
         write_json_file(results, f'data/retrieved.json')
 
-    elif args.command == 'inspect_db':
+    elif args.command == 'db':
         vector_db = VectorDB(
             db_path="./data/db/vector_db.pkl",
         )
-        vector_db.inspect_db(args.file_path)
+
+        file_path = f"./data/db_content/db_{time.time()}.json"
+
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        vector_db.inspect_db(file_path)
 
 if __name__ == "__main__":
     main()

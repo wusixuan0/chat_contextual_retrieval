@@ -107,9 +107,9 @@ class VectorDB:
         self.metadata = data["metadata"]
         self.query_cache = json.loads(data["query_cache"])
 
-    def inspect_db(self, file_path="./data/db/inspect.json"):
+    def inspect_db(self, file_path):
         self.load_db()
         write_json_file({
-            "metadata": self.metadata,
+            "chunks": self.metadata,
             "query_cache": self.query_cache
         }, file_path)

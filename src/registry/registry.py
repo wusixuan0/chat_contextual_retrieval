@@ -1,4 +1,4 @@
-# src/registry/registry.py
+import os
 import json
 from datetime import datetime
 from src.types.chat_data import Registry, ChatEntry, ChatStatus
@@ -10,6 +10,8 @@ class ChatRegistry:
 
     def _load_registry(self) -> Registry:
         try:
+            os.makedirs(os.path.dirname(self.registry_path), exist_ok=True)
+
             with open(self.registry_path, 'r') as f:
                 data = json.load(f)
                 print("Loaded registry data:", json.dumps(data, indent=2))
