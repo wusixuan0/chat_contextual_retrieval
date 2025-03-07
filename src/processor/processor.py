@@ -144,11 +144,11 @@ class ChatProcessor:
 
     def validate_path(self, file_path):
         if not os.path.exists(file_path):
-            raise FileNotFoundError(f"Folder not found: {folder_path}")
+            raise FileNotFoundError(f"Folder not found: {file_path}")
 
     def validate_folder(self, path):
         if not os.path.isdir(path):
-            raise NotADirectoryError(f"Path is not a directory: {folder_path}")
+            raise NotADirectoryError(f"Path is not a directory: {path}")
 
     def _generate_flow_summary(self, chat_data):
         # TODO: LLM call

@@ -11,3 +11,4 @@ BRANCH: Decision or transition points
 INSIGHT: Key insights or realizations
 PARK: Items for future exploration
 LINK: How topics connect
+lastly, list key searchable keywords from our chat. Provide a searchable succinct title.
